@@ -1,23 +1,46 @@
-version: "3.9"
+version: '3.8'
+
 services:
+  ollama:
+    build:
+      context: ./ollama
+      dockerfile: Dockerfile
+    container_name: morales1-ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
-      context: ./backend
-    volumes:
-      - ./backend:/app
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: morales1-backend
     ports:
       - "8000:8000"
+    volumes:
+      - ./frontend:/app/frontend
+      - ./backend/app:/app/app
     depends_on:
       - qdrant
-
-  frontend:
-    image: nginx:alpine
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-    ports:
-      - "3000:80"
+      - ollama
+    environment:
+      - MODEL_NAME=morales1
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - EMBEDDING_MODEL_NAME=nomic-embed-text
 
   qdrant:
     image: qdrant/qdrant
+    container_name: morales1-qdrant
     ports:
       - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  qdrant_data:

@@ -1,16 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Morales1 AI</title>
-  <link rel="stylesheet" href="../style.css" />
+  <meta charset="UTF-8">
+  <title>Morales1 Chat</title>
+  <link rel="stylesheet" href="./static/style.css">
 </head>
 <body>
-  <div id="chat">
-    <h2>Morales1 Chat</h2>
-    <div id="messages"></div>
-    <input type="text" id="message" placeholder="Ask something..." />
-    <button onclick="send()">Send</button>
+  <div class="container">
+    <h1>💬 Morales1 Chat Interface</h1>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <form id="chat-form" class="chat-form">
+      <input id="chat-input" type="text" placeholder="Type your message..." autocomplete="off" required />
+      <button type="submit">Send</button>
+    </form>
+
+    <hr />
+
+    <form id="upload-form" class="upload-form" enctype="multipart/form-data">
+      <label for="upload-input">Upload File (PDF, TXT, or Markdown):</label>
+      <input id="upload-input" type="file" accept=".pdf,.txt,.md,.xlsx" required />
+      <button type="submit">Upload</button>
+    </form>
   </div>
-  <script src="../app.js"></script>
+
+  <script src="./static/app.js"></script>
 </body>
 </html>

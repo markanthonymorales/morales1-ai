@@ -1,60 +1,48 @@
 from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-import shutil
-import json
-import time
+from starlette.middleware.cors import CORSMiddleware
+import os
 
-from ingest import ingest_text
+from ingest import ingest_file
 from rag_engine import generate_response
-from utils import read_uploaded_file
+from pprint import pprint
 
 app = FastAPI()
 
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-CHAT_LOG_FILE = Path("chat_logs.json")
+# Dynamically calculate path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(current_dir, "../frontend")
 
-app.mount("/static", StaticFiles(directory="../frontend", html=True), name="static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    with open("../frontend/public/index.html") as f:
+    with open(static_dir +"/public/index.html") as f:
         return HTMLResponse(f.read())
 
 @app.post("/chat")
-async def chat(request: Request):
-    data = await request.json()
-    question = data.get("question", "")
-    response, context = await generate_response(question)
-
-    # Log chat
-    log_entry = {
-        "timestamp": time.time(),
-        "question": question,
-        "response": response,
-        "context": context,
-    }
-
-    logs = []
-    if CHAT_LOG_FILE.exists():
-        with CHAT_LOG_FILE.open("r") as f:
-            logs = json.load(f)
-
-    logs.append(log_entry)
-    with CHAT_LOG_FILE.open("w") as f:
-        json.dump(logs, f, indent=2)
-
-    return JSONResponse({"response": response})
+async def chat(req: Request):
+    data = await req.json()
+    question = data.get("message", "")
+    try:
+        pprint(question)
+        answer = await generate_response(question)
+        return JSONResponse(content={"answer": answer})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    file_path = UPLOAD_DIR / file.filename
-    with file_path.open("wb") as f:
-        shutil.copyfileobj(file.file, f)
-
-    text = read_uploaded_file(file_path)
-    await ingest_text(text)
-    return {"status": "success", "filename": file.filename}
+    try:
+        result = await ingest_file(file)
+        return {"status": "success", "result": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

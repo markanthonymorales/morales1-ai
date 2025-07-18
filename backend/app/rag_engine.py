@@ -1,25 +1,24 @@
-from utils import embed_text, search_qdrant, call_ollama
+from util import embed_text, search_qdrant, call_ollama
 from mcp_tools import run_all_mcp_tools
 
-async def generate_response(question: str):
+async def generate_response(question: str) -> str:
     embedded_query = await embed_text(question)
     documents = await search_qdrant(embedded_query)
     context = "\n".join(documents)
 
-    mcp_results = await run_all_mcp_tools()
-    tools_output = "\n".join([f"{k}: {v}" for k, v in mcp_results.items()])
+    mcp_output = await run_all_mcp_tools()
+
     prompt = f"""
-You are Morales1, an intelligent assistant for infrastructure assessment.
-Respond in the same language as the user input.
+You are Morales1, an intelligent assistant for infrastructure and code analysis.
+Respond in the same language as the user.
+You have access to the following MCP tools and their results:
 
-Available MCP tools:
-{tools_output}
+{mcp_output}
 
-Context:
+Use the following context:
 {context}
----
-Question: {question}
-"""
 
-    answer = await call_ollama(prompt)
-    return answer, context
+User Question: {question}
+Answer:
+"""
+    return await call_ollama(prompt)

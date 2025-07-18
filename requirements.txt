@@ -3,3 +3,6 @@ uvicorn
 httpx
 qdrant-client
 sentence-transformers
+PyMuPDF
+markdown
+dotenv
